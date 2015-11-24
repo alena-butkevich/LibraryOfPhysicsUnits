@@ -1,0 +1,257 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Data.SqlClient; 
+
+namespace TelephoneBook
+{
+    public partial class MainForm : Form
+    {
+        SqlConnection connection1 = new SqlConnection
+                           (
+                           @"Data Source=NotePad;Initial Catalog=PhoneBook;Integrated Security=True"
+           );
+
+        public MainForm()
+        {
+            InitializeComponent();
+        }
+
+        public List<User> users = new List<User>();
+        public static int index;
+
+        private void MainForm_Load(object sender, EventArgs e)
+        {
+            connection1.Open();
+            string sql = "SELECT * FROM USERS";
+            SqlCommand command1 = new SqlCommand(sql, connection1);
+            SqlDataReader dataReader1 = command1.ExecuteReader();
+
+
+            while (dataReader1.Read())
+            {
+                users.Add(new User(dataReader1["Name"].ToString()));
+            }
+
+            dataReader1.Close();
+
+            for (int i = 0; i < users.Count; i++)
+            {
+                lbUsers.Items.Add(users[i].name);
+            }
+        }
+
+        private void btAdd_Click(object sender, EventArgs e)
+        {
+            FormForAdd form = new FormForAdd(users[0], index);
+            form.ShowDialog();
+
+            if (form.DialogResult == DialogResult.OK)
+            {
+                users[index] = form.list;
+            }
+
+            form.list.contacts.Sort();
+
+            dgUsers = createDataGridView();
+
+            for (int i = 0; i < form.list.contacts.Count; i++)
+            {
+                dgUsers.Rows.Add();
+                dgUsers.Rows[i].Cells[0].Value = form.list.contacts[i].surname + " " + form.list.contacts[i].name + " " + form.list.contacts[i].patronymic;
+                StringBuilder sb = new StringBuilder();
+                foreach (PhoneNumber number in users[index].contacts[i].numbers)
+                {
+                    sb.Append(number.ToString() + " ");
+                }
+                dgUsers.Rows[i].Cells[1].Value = sb;
+            }
+            
+        }
+
+        private void dgUsers_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            
+        }
+
+        private void btEdit_Click(object sender, EventArgs e)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(dgUsers[0, dgUsers.CurrentRow.Index].Value.ToString() + ' ');
+            sb.Append(dgUsers[1, dgUsers.CurrentRow.Index].Value.ToString());
+                if (sb.ToString() == null)
+                {
+                    return;
+                }
+                else
+                {
+                    string[] result = sb.ToString().Split(' ');
+                    List<PhoneNumber> pn = new List<PhoneNumber>();
+                    for (int i = 3; i < result.Length-1; i+=2)
+                    {
+                        pn.Add(new PhoneNumber(result[i], result[i+1]));
+                    }
+
+                    Contact contact = new Contact(result[0], result[1], result[2], pn);
+                    contact.id = (dgUsers.CurrentRow.Index + 1).ToString();
+
+                    FormForEdit form = new FormForEdit(users[0], contact);
+
+                    form.ShowDialog();
+
+                    if (form.DialogResult == DialogResult.OK)
+                    {
+                        users[index] = form.list;
+                    }
+
+                    dgUsers = createDataGridView();
+
+                    for (int i = 0; i < form.list.contacts.Count; i++)
+                    {
+                        dgUsers.Rows.Add();
+                        dgUsers.Rows[i].Cells[0].Value = form.list.contacts[i].surname + " " + form.list.contacts[i].name + " " + form.list.contacts[i].patronymic;
+                        StringBuilder s = new StringBuilder();
+                        foreach (PhoneNumber number in users[index].contacts[i].numbers)
+                        {
+                            s.Append(number.ToString() + " ");
+                        }
+                        dgUsers.Rows[i].Cells[1].Value = s;
+                    }
+                }
+        }
+
+        private void btFind_Click(object sender, EventArgs e)
+        {
+            if (tbName.Text == "")
+            {
+                return;
+            }
+
+            else
+            {
+                User newUser = new User();
+                newUser = users[index].Find(tbName.Text);
+                dgUsers = createDataGridView();
+
+                for (int i = 0; i < newUser.contacts.Count; i++)
+                {
+                    dgUsers.Rows.Add();
+                    dgUsers.Rows[i].Cells[0].Value = newUser.contacts[i].surname + " " + newUser.contacts[i].name + " " + newUser.contacts[i].patronymic;
+                    StringBuilder sb = new StringBuilder();
+                    foreach (PhoneNumber number in users[0].contacts[i].numbers)
+                    {
+                        sb.Append(number.ToString() + " ");
+                    }
+                    dgUsers.Rows[i].Cells[1].Value = sb;
+                }
+            }
+        }
+        public DataGridView createDataGridView()
+        {
+            DataGridViewTextBoxColumn nameColumn = new DataGridViewTextBoxColumn();
+            nameColumn.HeaderText = "Name";
+            nameColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+            nameColumn.Resizable = DataGridViewTriState.False;
+            nameColumn.ReadOnly = true;
+            nameColumn.Width = 200;
+
+            DataGridViewTextBoxColumn phonenumberColumn = new DataGridViewTextBoxColumn();
+            phonenumberColumn.HeaderText = "Phone number";
+            phonenumberColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+            phonenumberColumn.Resizable = DataGridViewTriState.False;
+            phonenumberColumn.ReadOnly = true;
+            phonenumberColumn.Width = 263;
+
+            dgUsers.Columns.Add(nameColumn);
+            dgUsers.Columns.Add(phonenumberColumn);
+
+            return dgUsers;
+        }
+
+        private void lbUsers_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void lbUsers_Click(object sender, EventArgs e)
+        {
+            index = lbUsers.SelectedIndex;
+
+            string sql = "SELECT * FROM CONTACTS WHERE Id_user =" + (index + 1);
+            SqlCommand command1 = new SqlCommand(sql, connection1);
+            SqlDataReader dataReader1 = command1.ExecuteReader();
+            List<PhoneNumber> p = new List<PhoneNumber>();
+
+
+            while (dataReader1.Read())
+            {
+                Contact contact = new Contact(dataReader1["Id"].ToString(), dataReader1["Name"].ToString(), dataReader1["Surname"].ToString(),
+                    dataReader1["Patronymic"].ToString());
+
+                users[index].contacts.Add(contact);
+
+            }
+            dataReader1.Close();
+
+            foreach (Contact ct in users[index].contacts)
+            {
+                string sql1 = "SELECT * FROM PHONENUMBER WHERE Id_contact =" + ct.id;
+                SqlCommand command2 = new SqlCommand(sql1, connection1);
+                SqlDataReader dr = command2.ExecuteReader();
+
+                while (dr.Read())
+                {
+                    List<PhoneNumber> pn = new List<PhoneNumber>();
+                    pn.Add(new PhoneNumber(dr["Number"].ToString(), dr["Label"].ToString()));
+                    users[index].contacts[Int32.Parse(ct.id) - 1].numbers = pn;
+                }
+
+                dr.Close();
+            }
+            dgUsers = createDataGridView();
+            users[index].contacts.Sort();
+            for (int i = 0; i < users[index].contacts.Count; i++)
+            {
+                dgUsers.Rows.Add();
+                dgUsers.Rows[i].Cells[0].Value = users[index].contacts[i].surname + " " + users[index].contacts[i].name + " " + users[index].contacts[i].patronymic;
+                StringBuilder sb = new StringBuilder();
+                foreach (PhoneNumber number in users[index].contacts[i].numbers)
+                 {
+                     sb.Append(number.ToString() + " ");
+                 }
+                dgUsers.Rows[i].Cells[1].Value = sb;
+            }
+        }
+        private void tbName_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            connection1.Close();
+        }
+
+        private void btUser_Click(object sender, EventArgs e)
+        {
+            AddUser form = new AddUser(users);
+            form.ShowDialog();
+
+            if (form.DialogResult == DialogResult.OK)
+            {
+                users = form.users;
+            }
+        }
+
+
+    }
+}
+
