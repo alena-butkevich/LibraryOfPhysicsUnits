@@ -31,7 +31,6 @@ namespace TelephoneBook
             }
 
             this.contact = contact;
-            MessageBox.Show(contact.ToString());
             this.index = Int32.Parse(contact.id);
            
             InitializeComponent();
@@ -69,7 +68,6 @@ namespace TelephoneBook
                 list.contacts.RemoveAt(Int32.Parse(contact.id) - 1);
                 
                 Contact ct = new Contact(tbName.Text, tbSurname.Text, tbPatronymic.Text, numbers);
-                MessageBox.Show(ct.ToString());
                 ct.id = index.ToString();
                 list.AddContact(ct);
                 string sql = string.Format("Update CONTACTS Set Name = '{0}', Surname = '{1}', Patronymic = '{2}'  Where Id = '{3}'", 
@@ -85,7 +83,15 @@ namespace TelephoneBook
 
         private void btEditNumber_Click(object sender, EventArgs e)
         {
+            if (tbEditNumber.Text == "" || lbNumbers.SelectedItems.Count == 0)
+            {
+                return;
+            }
             String phonenumber = lbNumbers.SelectedItem.ToString();
+            if (lbLabels.SelectedItems.Count == 0)
+            {
+                return;
+            }
             lbNumbers.Items.RemoveAt(lbNumbers.SelectedIndex);
             PhoneNumber newNumber = new PhoneNumber(tbEditNumber.Text, lbLabels.SelectedItem.ToString());
             lbNumbers.Items.Add(newNumber.ToString());
@@ -94,6 +100,10 @@ namespace TelephoneBook
 
         private void btAddPhoneNumber_Click(object sender, EventArgs e)
         {
+            if (tbEditNumber.Text == "")
+            {
+                return;
+            }
             PhoneNumber newNumber = new PhoneNumber(tbEditNumber.Text, lbLabels.SelectedItem.ToString());
             lbNumbers.Items.Add(newNumber.ToString());
             tbEditNumber.Text = "";
