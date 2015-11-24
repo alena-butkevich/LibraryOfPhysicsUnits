@@ -26,11 +26,13 @@ namespace TelephoneBook
         }
 
         public List<User> users = new List<User>();
+        public User user = new User();
         public static int index;
 
         private void MainForm_Load(object sender, EventArgs e)
         {
             connection1.Open();
+            
             string sql = "SELECT * FROM USERS";
             SqlCommand command1 = new SqlCommand(sql, connection1);
             SqlDataReader dataReader1 = command1.ExecuteReader();
@@ -38,7 +40,7 @@ namespace TelephoneBook
 
             while (dataReader1.Read())
             {
-                users.Add(new User(dataReader1["Name"].ToString()));
+                users.Add(new User(dataReader1["Id"].ToString(), dataReader1["Name"].ToString()));
             }
 
             dataReader1.Close();
@@ -56,7 +58,11 @@ namespace TelephoneBook
 
             if (form.DialogResult == DialogResult.OK)
             {
-                users[index] = form.list;
+                users[index].contacts = new List<Contact>();
+                foreach (Contact ct in form.list.contacts)
+                {
+                    users[index].contacts.Add(ct);
+                }
             }
 
             form.list.contacts.Sort();
@@ -84,48 +90,43 @@ namespace TelephoneBook
 
         private void btEdit_Click(object sender, EventArgs e)
         {
+
+            if (dgUsers.SelectedRows.Count == 0)
+            {
+                return;
+            }
             StringBuilder sb = new StringBuilder();
             sb.Append(dgUsers[0, dgUsers.CurrentRow.Index].Value.ToString() + ' ');
             sb.Append(dgUsers[1, dgUsers.CurrentRow.Index].Value.ToString());
-                if (sb.ToString() == null)
+            string[] result = sb.ToString().Split(' ');
+            List<PhoneNumber> pn = new List<PhoneNumber>();
+            for (int i = 3; i < result.Length-1; i+=2)
+            {
+                 pn.Add(new PhoneNumber(result[i], result[i+1]));
+            }
+
+            Contact contact = new Contact(result[0], result[1], result[2], pn);
+            contact.id = (dgUsers.CurrentRow.Index + 1).ToString();
+            FormForEdit form = new FormForEdit(users[0], contact);
+
+            form.ShowDialog();
+            if (form.DialogResult == DialogResult.OK)
+            {
+                 users[index] = form.list;
+            }
+            
+
+            for (int i = 0; i < form.list.contacts.Count; i++)
+            {
+                dgUsers.Rows.Add();
+                dgUsers.Rows[i].Cells[0].Value = form.list.contacts[i].surname + " " + form.list.contacts[i].name + " " + form.list.contacts[i].patronymic;
+                StringBuilder s = new StringBuilder();
+                foreach (PhoneNumber number in users[index].contacts[i].numbers)
                 {
-                    return;
+                    s.Append(number.ToString() + " ");
                 }
-                else
-                {
-                    string[] result = sb.ToString().Split(' ');
-                    List<PhoneNumber> pn = new List<PhoneNumber>();
-                    for (int i = 3; i < result.Length-1; i+=2)
-                    {
-                        pn.Add(new PhoneNumber(result[i], result[i+1]));
-                    }
-
-                    Contact contact = new Contact(result[0], result[1], result[2], pn);
-                    contact.id = (dgUsers.CurrentRow.Index + 1).ToString();
-
-                    FormForEdit form = new FormForEdit(users[0], contact);
-
-                    form.ShowDialog();
-
-                    if (form.DialogResult == DialogResult.OK)
-                    {
-                        users[index] = form.list;
-                    }
-
-                    dgUsers = createDataGridView();
-
-                    for (int i = 0; i < form.list.contacts.Count; i++)
-                    {
-                        dgUsers.Rows.Add();
-                        dgUsers.Rows[i].Cells[0].Value = form.list.contacts[i].surname + " " + form.list.contacts[i].name + " " + form.list.contacts[i].patronymic;
-                        StringBuilder s = new StringBuilder();
-                        foreach (PhoneNumber number in users[index].contacts[i].numbers)
-                        {
-                            s.Append(number.ToString() + " ");
-                        }
-                        dgUsers.Rows[i].Cells[1].Value = s;
-                    }
-                }
+                dgUsers.Rows[i].Cells[1].Value = s;
+            }
         }
 
         private void btFind_Click(object sender, EventArgs e)
@@ -138,7 +139,8 @@ namespace TelephoneBook
             else
             {
                 User newUser = new User();
-                newUser = users[index].Find(tbName.Text);
+                newUser = user.Find(tbName.Text);
+                dgUsers.Rows.Clear();
                 dgUsers = createDataGridView();
 
                 for (int i = 0; i < newUser.contacts.Count; i++)
@@ -146,7 +148,7 @@ namespace TelephoneBook
                     dgUsers.Rows.Add();
                     dgUsers.Rows[i].Cells[0].Value = newUser.contacts[i].surname + " " + newUser.contacts[i].name + " " + newUser.contacts[i].patronymic;
                     StringBuilder sb = new StringBuilder();
-                    foreach (PhoneNumber number in users[0].contacts[i].numbers)
+                    foreach (PhoneNumber number in newUser.contacts[i].numbers)
                     {
                         sb.Append(number.ToString() + " ");
                     }
@@ -183,9 +185,21 @@ namespace TelephoneBook
 
         private void lbUsers_Click(object sender, EventArgs e)
         {
-            index = lbUsers.SelectedIndex;
+            index = lbUsers.SelectedIndex + 1;
 
-            string sql = "SELECT * FROM CONTACTS WHERE Id_user =" + (index + 1);
+            foreach (User us in users)
+            {
+                if (Int32.Parse(us.id) == index)
+                {
+                    this.user = us;
+                }
+            }
+
+            dgUsers.Rows.Clear();
+
+            user.contacts  = new List<Contact>();
+            
+            string sql = "SELECT * FROM CONTACTS WHERE Id_user =" + index;
             SqlCommand command1 = new SqlCommand(sql, connection1);
             SqlDataReader dataReader1 = command1.ExecuteReader();
             List<PhoneNumber> p = new List<PhoneNumber>();
@@ -196,13 +210,14 @@ namespace TelephoneBook
                 Contact contact = new Contact(dataReader1["Id"].ToString(), dataReader1["Name"].ToString(), dataReader1["Surname"].ToString(),
                     dataReader1["Patronymic"].ToString());
 
-                users[index].contacts.Add(contact);
+                user.contacts.Add(contact);
 
             }
             dataReader1.Close();
 
-            foreach (Contact ct in users[index].contacts)
+            foreach (Contact ct in user.contacts)
             {
+
                 string sql1 = "SELECT * FROM PHONENUMBER WHERE Id_contact =" + ct.id;
                 SqlCommand command2 = new SqlCommand(sql1, connection1);
                 SqlDataReader dr = command2.ExecuteReader();
@@ -211,19 +226,20 @@ namespace TelephoneBook
                 {
                     List<PhoneNumber> pn = new List<PhoneNumber>();
                     pn.Add(new PhoneNumber(dr["Number"].ToString(), dr["Label"].ToString()));
-                    users[index].contacts[Int32.Parse(ct.id) - 1].numbers = pn;
+                    user.contacts[Int32.Parse(ct.id) -1].numbers = pn;
                 }
 
                 dr.Close();
             }
+            
             dgUsers = createDataGridView();
-            users[index].contacts.Sort();
-            for (int i = 0; i < users[index].contacts.Count; i++)
+            user.contacts.Sort();
+            for (int i = 0; i < user.contacts.Count; i++)
             {
                 dgUsers.Rows.Add();
-                dgUsers.Rows[i].Cells[0].Value = users[index].contacts[i].surname + " " + users[index].contacts[i].name + " " + users[index].contacts[i].patronymic;
+                dgUsers.Rows[i].Cells[0].Value = user.contacts[i].surname + " " + user.contacts[i].name + " " + user.contacts[i].patronymic;
                 StringBuilder sb = new StringBuilder();
-                foreach (PhoneNumber number in users[index].contacts[i].numbers)
+                foreach (PhoneNumber number in user.contacts[i].numbers)
                  {
                      sb.Append(number.ToString() + " ");
                  }
@@ -242,7 +258,7 @@ namespace TelephoneBook
 
         private void btUser_Click(object sender, EventArgs e)
         {
-            AddUser form = new AddUser(users);
+            FormForUserAdd form = new FormForUserAdd(users);
             form.ShowDialog();
 
             if (form.DialogResult == DialogResult.OK)

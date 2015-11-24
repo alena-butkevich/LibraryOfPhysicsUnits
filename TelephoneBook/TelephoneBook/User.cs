@@ -31,6 +31,13 @@ namespace TelephoneBook
             contacts = new List<Contact>();
         }
 
+        public User(String id, String name)
+        {
+            this.id = id;
+            this.name = name;
+            contacts = new List<Contact>();
+        }
+
         public User()
         {
             contacts = new List<Contact>();

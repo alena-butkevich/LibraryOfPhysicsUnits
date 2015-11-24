@@ -11,7 +11,7 @@ using System.Data.SqlClient;
 
 namespace TelephoneBook
 {
-    public partial class AddUser : Form
+    public partial class FormForUserAdd : Form
     {
         SqlConnection connection1 = new SqlConnection
                           (
@@ -19,7 +19,7 @@ namespace TelephoneBook
           );
 
         public List<User> users = new List<User>();
-        public AddUser(List<User> users)
+        public FormForUserAdd(List<User> users)
         {
             foreach (User user in users)
             {
