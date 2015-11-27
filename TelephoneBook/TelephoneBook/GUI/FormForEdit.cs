@@ -7,27 +7,29 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Data.SqlClient; 
+using System.Data.SqlClient;
+using TelephoneBook.DataAccess;
+using TelephoneBook.DataAccess.Models;
+using TelephoneBook.BusinessLogic;
 
-
-namespace TelephoneBook
+namespace TelephoneBook.GUI
 {
     public partial class FormForEdit : Form
     {
-        SqlConnection connection1 = new SqlConnection
-                         (
-                         @"Data Source=NotePad;Initial Catalog=PhoneBook;Integrated Security=True"
-         );
+        SqlConnection connection1 = BaseDataAccess.CreateConnection();
 
-        public User list = new User();
-        public Contact contact = new Contact();
+        public User list;
+        public Contact contact;
         public int index;
 
         public FormForEdit(User list, Contact contact)
         {
+            list = new User();
+            this.contact = new Contact();
+
             foreach (Contact us in list.contacts)
             {
-                this.list.AddContact(us);
+                UserContactsProcessing.AddContact(us, this.list);
             }
 
             this.contact = contact;
@@ -56,6 +58,7 @@ namespace TelephoneBook
             else
             {
                 connection1.Open();
+
                 List<PhoneNumber> numbers = new List<PhoneNumber>();
                 StringBuilder sbr = new StringBuilder();
                 foreach (String str in lbNumbers.Items)
@@ -69,13 +72,10 @@ namespace TelephoneBook
                 
                 Contact ct = new Contact(tbName.Text, tbSurname.Text, tbPatronymic.Text, numbers);
                 ct.id = index.ToString();
-                list.AddContact(ct);
-                string sql = string.Format("Update CONTACTS Set Name = '{0}', Surname = '{1}', Patronymic = '{2}'  Where Id = '{3}'", 
-                    ct.name, ct.surname, ct.patronymic, index);
-                using (SqlCommand cmd = new SqlCommand(sql, this.connection1))
-                {
-                    cmd.ExecuteNonQuery();
-                }
+                UserContactsProcessing.AddContact(ct, list);
+
+                BaseDataAccess.UpdateContacts(connection1, ct, index);
+
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }

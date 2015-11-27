@@ -8,15 +8,14 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Data.SqlClient;
+using TelephoneBook.DataAccess;
+using TelephoneBook.DataAccess.Models;
 
-namespace TelephoneBook
+namespace TelephoneBook.GUI
 {
     public partial class FormForUserAdd : Form
     {
-        SqlConnection connection1 = new SqlConnection
-                          (
-                          @"Data Source=NotePad;Initial Catalog=PhoneBook;Integrated Security=True"
-          );
+        SqlConnection connection1 = BaseDataAccess.CreateConnection();
 
         public List<User> users = new List<User>();
         public FormForUserAdd(List<User> users)
@@ -35,18 +34,14 @@ namespace TelephoneBook
                 return;
             }
             else
-            {
-               
+            {   
                 User user = new User(tbName.Text);
                 users.Add(user);
+
                 connection1.Open();
-                string saveUser = "INSERT into USERS (Name) " +
-                   " VALUES ('" + user.name + "');";
-
-                SqlCommand querySaveStaff = new SqlCommand(saveUser, connection1);
-                querySaveStaff.ExecuteNonQuery();
-
+                BaseDataAccess.InsertIntoUsers(connection1, user);
                 connection1.Close();
+
                 this.Close();
 
             }

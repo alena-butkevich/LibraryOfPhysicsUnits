@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TelephoneBook
+namespace TelephoneBook.DataAccess.Models
 {
     public class Contact : IComparable
     {

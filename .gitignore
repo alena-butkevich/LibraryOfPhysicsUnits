@@ -49,3 +49,15 @@ TelephoneBook/TelephoneBook/obj/Debug/TemporaryGeneratedFile_E7A71F73-0F8D-4B9B-
 TelephoneBook/TelephoneBook/FormForUserAdd.Designer.cs
 TelephoneBook/TelephoneBook/FormForUserAdd.resx
 TelephoneBook/TelephoneBook/obj/Debug/TelephoneBook.FormForUserAdd.resources
+TelephoneBook/TelephoneBook/obj/Debug/TelephoneBook.GUI.MainForm.resources
+TelephoneBook/TelephoneBook/obj/Debug/TelephoneBook.GUI.FormForUserAdd.resources
+TelephoneBook/TelephoneBook/obj/Debug/TelephoneBook.GUI.FormForEdit.resources
+TelephoneBook/TelephoneBook/obj/Debug/TelephoneBook.GUI.FormForAdd.resources
+TelephoneBook/TelephoneBook/GUI/MainForm.resx
+TelephoneBook/TelephoneBook/GUI/MainForm.Designer.cs
+TelephoneBook/TelephoneBook/GUI/FormForUserAdd.resx
+TelephoneBook/TelephoneBook/GUI/FormForUserAdd.Designer.cs
+TelephoneBook/TelephoneBook/GUI/FormForEdit.resx
+TelephoneBook/TelephoneBook/GUI/FormForAdd.resx
+TelephoneBook/TelephoneBook/GUI/FormForEdit.Designer.cs
+TelephoneBook/TelephoneBook/GUI/FormForAdd.Designer.cs
